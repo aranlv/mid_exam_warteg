@@ -19,17 +19,19 @@ Dish *createNode(char name[], int price, int qty){
   return newNode;
 }
 
-const int MAX_BUCKETS = 5; // banyak index yang mau dibuat
+const int MAX_BUCKETS = 5; 
 
 struct Ctm{
   char name[255];
   Ctm *next;
+  Dish *list;
 } *top[MAX_BUCKETS], *bottom[MAX_BUCKETS];
 
 Ctm *createCtm(char name[]){
   Ctm *newNode = (Ctm *)malloc(sizeof(Ctm));
   strcpy(newNode->name, name);
   newNode->next = NULL;
+  newNode->list = NULL;
   return newNode;
 }
 
@@ -56,7 +58,7 @@ void pushCtm(char name[]){
 }
 
 
-void pushTail(char name[], int price, int qty) //KEPAKE
+void pushTail(char name[], int price, int qty) 
 {
   Dish *temp = createNode(name, price, qty); // create the new node
   if (!head){
@@ -67,17 +69,7 @@ void pushTail(char name[], int price, int qty) //KEPAKE
     tail = temp;       // the new node will be the last node in the LL (new tail)
   }
 }
-void pushHead(char name[], int price, int qty){ 
-  Dish *temp = createNode(name, price, qty);
-  if (!head){
-    head = tail = temp;
-  } else{
-    temp->next = head;
-    head->prev = temp;
-    head = temp;
-  }
-}
-void popTail(){ //MASUK POPMID
+void popTail(){ 
   if (!head){
     return; 
   } else if (head == tail){
@@ -90,7 +82,7 @@ void popTail(){ //MASUK POPMID
     tail = newTail; 
   }
 }
-void popHead(){ //MASUK POPMID
+void popHead(){ 
   if (!head){
     return;
   } else if (head==tail){
@@ -103,7 +95,7 @@ void popHead(){ //MASUK POPMID
     head = newHead;
   }
 }
-void popMid(char query[]){ //KEPAKE
+void popMid(char query[]){ 
   if (!head){ //no nodes
     return;
   } else if (strcmp(head->name, query)==0){//if the query is the first element
@@ -120,16 +112,23 @@ void popMid(char query[]){ //KEPAKE
           current->prev = current->next = NULL;
           free(current);
           current = NULL;
+          break;
         }
         else current = current->next;
     } 
   }
 }
-void pushMid(char name[], int price, int qty){ //GAPERLU
-  if(!head){
-    pushHead(name, price, qty);
-  } else{
-    Dish *newNode = createNode(name, price, qty);
+void assign(Dish *dish, Ctm *ctm, int qty){
+  Dish *assigned = createNode(dish->name, dish->price, qty);
+  if(!ctm->list){
+    ctm->list = assigned; 
+  } else {
+    Dish *curr = ctm->list;
+    while(curr->next){
+      curr = curr->next;
+    }
+    curr->next = assigned;
+    assigned->prev = curr;
   }
 }
 
@@ -227,6 +226,7 @@ void removeDish(){
     for(int j=0; j<3; j++) printf(" ");
 
     //PRICE
+    if(temp->price<10000) printf(" ");
     printf(" Rp%d\n", temp->price);
   }
   puts("================================");
@@ -248,7 +248,7 @@ void removeDish(){
   getchar();
 }
 void addCustomer(){
-  int valid; char name[10]; do{
+  int valid; char name[20]; do{
     printf("Insert the customer's name [Without space]: ");
     scanf("%[^\n]s", name); getchar(); valid = 1;
 
@@ -267,8 +267,22 @@ void addCustomer(){
   puts("Press enter to continue...");
   getchar();
 }
+Ctm *find(char name[]){
+  int p=0; for (int i = 0; i < MAX_BUCKETS; i++){
+    if(top[i]){
+      Ctm *curr = top[i];
+      while(curr){
+        if(strcmp(curr->name, name)==0){
+          return curr; break;
+        }
+        curr = curr->next;
+      }
+    } 
+  }
+  return NULL;
+}
 void searchCustomer(){
-  int valid; char name[10]; do{
+  int valid; char name[20]; do{
     printf("Insert the customer's name to be searched: ");
     scanf("%[^\n]s", name); getchar(); valid = 1;
 
@@ -282,20 +296,7 @@ void searchCustomer(){
     }
   } while(valid==0);
 
-
-  int p=0; for (int i = 0; i < MAX_BUCKETS; i++){
-    if(top[i]){
-      Ctm *curr = top[i];
-      while(curr){
-        if(strcmp(curr->name, name)==0){
-          p = 1; break;
-        }
-        curr = curr->next;
-      }
-    } 
-  }
-
-  p==0?printf("%s is not present.\n", name):printf("%s is present.\n", name);
+  find(name)?printf("%s is present.\n", name):printf("%s is not present.\n", name);
   puts("Press enter to continue...");
   getchar();
 }
@@ -314,14 +315,73 @@ void printCustomers(){
   getchar();
 }
 void order(){
-  printf("Insert the customer's name:")
-}
+  //NAME
+  Ctm *temp;
+  char name[20]; do{
+    printf("Insert the customer's name: ");
+    scanf("%[^\n]s", name); getchar(); 
+    temp = find(name);
+  } while(!temp);
+  
+  //DISHES
+  printf("Insert the amount of dish: ");
+  int a; scanf("%d", &a); getchar();
+  for(int i=1; i<=a; i++){
+    int valid=0; do{
+      printf("[%d] Insert the dish's name and quantity: ", i);
+      char dish[20]; int qty;
+      scanf("%[^x]x%d", dish, &qty); getchar();
+      dish[strlen(dish)-1]='\0';
 
+      Dish *current = head;
+      while(current){
+        if(strcmp(current->name, dish)==0 && current->qty > qty && qty > 0){
+          
+          assign(current, temp, qty); //assign to customer
+          current->qty = current->qty - qty;
+          
+          valid=1; break;
+        }
+        else current = current->next;
+      } 
+
+    } while(valid==0);
+  }
+  puts("Order success!");
+  puts("Press enter to continue...");
+  getchar();
+}
+void pay(){
+  puts("Insert the customer's index: ");
+  int idx; scanf("%d", &idx); getchar();
+  Ctm *curr; int j=1; 
+  for (int i = 0; i < MAX_BUCKETS; i++){
+    if(top[i]){
+      curr = top[i];
+      while(curr){
+          if(j==idx){
+            printf("%s\n",curr->name); 
+            i=MAX_BUCKETS; break;
+          }
+          j++; curr = curr->next;  
+      }
+    }
+  } 
+  Dish *temp = curr->list;
+  int k=1; int sum=0; while(temp){
+    printf("[%d] %s x%d\n", k, temp->name, temp->qty);
+    sum += temp->price*temp->qty;
+    temp = temp->next;
+  }
+  printf("Total: Rp%d\n", sum);
+
+  puts("Press enter to continue...");
+  getchar();
+}
 
 int main(){
   int i; while(i!=8){
     do{
-      //puts("===");printLinkedList();puts("===");
       printMainMenu();
       scanf("%d", &i); getchar();
       
@@ -330,6 +390,8 @@ int main(){
       else if(i==3) addCustomer();
       else if(i==4) searchCustomer();
       else if(i==5) printCustomers();
+      else if(i==6) order();
+      else if(i==7) pay();
       else if(i==8) return 0;
       
     } while(i<1 || i>8);  
