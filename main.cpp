@@ -378,6 +378,21 @@ void pay(){
   puts("Press enter to continue...");
   getchar();
 }
+void splash(){
+  puts("Please expand your terminal to full screen!");
+  puts("Press enter to continue...");
+  getchar();
+
+  FILE *fp;
+  char c;
+  fp = fopen("splash-screen.txt", "r");
+
+  while(!feof(fp)){
+    c = fgetc(fp);
+    printf("%c", c);
+  }
+  fclose(fp);
+}
 
 int main(){
   int i; while(i!=8){
@@ -392,7 +407,7 @@ int main(){
       else if(i==5) printCustomers();
       else if(i==6) order();
       else if(i==7) pay();
-      else if(i==8) return 0;
+      else if(i==8) splash();
       
     } while(i<1 || i>8);  
   }
